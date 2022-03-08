@@ -2,7 +2,6 @@
 # Molecule class Reads ADF output, organizes MOs, organizes excited state 
 # info by symmetry 
 # Alva Dillon, Hanwen Liu Spring 2022
-# 
 #**************************************************************************
 import sys
 
