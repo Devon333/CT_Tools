@@ -3,6 +3,8 @@
 # info by symmetry 
 # Alva Dillon, Hanwen Liu Spring 2022
 #**************************************************************************
+
+
 import sys
 
 class Molecule:
