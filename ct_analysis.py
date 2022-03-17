@@ -22,13 +22,13 @@ class Molecule:
         self.metal_type = metal 
 
     
-    def make_xyz(self, outfile)
-    '''
-    makes file in .xyz format from ADF output file 
-    and was created to view the progression of a 
-    geometry optimization. 
-    python ADF_output_file ouput_xyz_filename
-    '''    
+    def make_xyz(self, outfile):
+        '''
+        makes file in .xyz format from ADF output file 
+        and was created to view the progression of a 
+        geometry optimization. 
+        python ADF_output_file ouput_xyz_filename
+        '''    
         filename=self.filename
         fi = open(filename,'r')
         outfi=open(outfile+".xyz","w")
