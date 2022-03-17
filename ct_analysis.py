@@ -18,6 +18,58 @@ class Molecule:
     def __init__(self, ADF_Outname, metal="Ag"):
         self.filename = str(ADF_Outname)
         self.metal_type = metal 
+
+    
+    def make_xyz(self, outfile)
+    '''
+    makes file in .xyz format from ADF output file 
+    and was created to view the progression of a 
+    geometry optimization. 
+    python ADF_output_file ouput_xyz_filename
+    '''    
+        filename=self.filename
+        fi = open(filename,'r')
+        outfi=open(outfile+".xyz","w")
+        li = fi.readline()
+        numAtoms=0
+        while li:
+            li= fi.readline()
+            if "ATOMS" in li:
+                #print(li)
+                li=fi.readline()
+                li=fi.readline()
+                li=fi.readline()
+                while "FRAGMENTS" not in li:
+                    li=fi.readline()
+                    if len(li.split()) >2:
+                        numAtoms+=1
+                    else:
+                        break
+                    #print(li)
+                print("number of Atoms %i "%(numAtoms)) 
+            elif "Coordinates in Geometry Cycle" in li and numAtoms > 0: 
+                outfi=open(outfile+".xyz","a")
+                outfi.write(str(numAtoms))
+                outfi.write("\n \n")
+                coords=[]
+                li=fi.readline()
+                for i in range(numAtoms):
+                    li =fi.readline()
+                    line=li.split()
+                    tempStr = line[0].split(".")
+                    line[0] = tempStr[1]
+                    for j in range(len(line)):
+                        outfi.write(line[j] + "   ")
+                    outfi.write("\n")
+                    coords.append(line)
+                    #print(line)
+                #outfi.write(str(coords))
+                #outfi.write("")
+                
+                #print(coords)
+        outfi.close()
+        fi.close()
+
     
 
     def make_latex_table_header(self, outfile):
