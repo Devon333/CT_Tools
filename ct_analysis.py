@@ -1,32 +1,69 @@
 #**************************************************************************
 # Molecule class Reads ADF output, organizes MOs, organizes excited state 
 # info by symmetry 
-# Alva Dillon, Hanwen Liu Spring 2022
+# Alva Dillon, Hongyi Wu, Hanwen Liu Spring 2022
 #**************************************************************************
 import sys
 
 class Molecule:
     filename = None
-    Orbital_Occ = {} # orbital label: occupation
-    Orbital_Energy = {} # orbital label: MO Energy
-    Orbital_Localized_Character = {} # orbital label: [percent metal , percent molecule]
-    Orbital_Character = {} # orbital label:[s character, p character, d character]
+    Orbital_Occ = {} # {orbital label: occupation}
+    Orbital_Energy = {} # {orbital label: MO Energy}
+    Orbital_Localized_Character = {} # {orbital label: [percent metal , percent molecule]}
+    Orbital_Character = {} # {orbital label:[s character, p character, d character]}
     metal_type= None
     Excited_States= {} # {Symm:{exc_num: [energy, osc_str, tdm_x, tdm_y, tdm_z]} } 
     Excited_State_Decomp = {} # {Symm: {Exc_num:{transition label: [weight, tdm_x, tdm_y, tdm_z]} } }
+    CT_Osc_Product ={} #{Symm: {Exc_num: CT_char*osc_str}}
+    CT_Excited_State=[] #{Symm: {Exc_num: CT_char}}
 
     def __init__(self, ADF_Outname, metal="Ag"):
         self.filename = str(ADF_Outname)
         self.metal_type = metal 
 
+
+
+    def calc_ct_character(self, symm):
+        ''' 
+        calculates charge transfer character of excited state from orbitals localized on metal or molecule
+        '''       
+        for state in self.Excited_State_Decomp[symm]:
+            occ_vir_diff = [0,0]#[part metal , part molecule] 
+            print("")
+            for transition in self.Excited_State_Decomp[symm][state]:
+                weight = self.Excited_State_Decomp[symm][state][transition][0]
+                transition = transition.split("$\\rightarrow$")
+                occ_orb = transition[0].replace(" ", "")
+                vir_orb = transition[1].replace(" ", "")
+                #occ_char = self.Orbital_Localized_Character[occ_orb]
+                occ_norm = [float(i)/sum(self.Orbital_Localized_Character[occ_orb]) for i in self.Orbital_Localized_Character[occ_orb]]
+                #vir_char = self.Orbital_Localized_Character[vir_orb]
+                try:
+                    vir_norm = [float(i)/sum(self.Orbital_Localized_Character[vir_orb]) for i in self.Orbital_Localized_Character[vir_orb]]
+                except:
+                    print(f"orbital {vir_orb} is not in your list of orbitals") 
+                    pass
+                    #vir_norm=[0,0]
+                print(f"occ_norm {occ_norm} vir_norm {vir_norm}")
+                #for i in range(len(occ_norm)):
+                #    occ_vir_diff[i] += (occ_norm[i] - vir_norm[i]) * weight
+                occ_vir_diff[0] += (occ_norm[0] - vir_norm[0]) * weight
+                print(f"ct {state} : {occ_vir_diff}")
+            try:
+                print(f"ct*osc_str : {occ_vir_diff[0]*float(self.Excited_States[symm][state][1])} ")                 
+                self.CT_Excited_State[symm][state]=float(self.Excited_States[symm][state][1])
+                self.CT_Osc_Product[symm][state]=occ_vir_diff[0]*float(self.Excited_States[symm][state][1])
+            except: 
+                continue
+
     
-    def make_xyz(self, outfile)
-    '''
-    makes file in .xyz format from ADF output file 
-    and was created to view the progression of a 
-    geometry optimization. 
-    python ADF_output_file ouput_xyz_filename
-    '''    
+    def make_xyz(self, outfile):
+        '''
+        makes file in .xyz format from ADF output file 
+        and was created to view the progression of a 
+        geometry optimization. 
+        python ADF_output_file ouput_xyz_filename
+        '''    
         filename=self.filename
         fi = open(filename,'r')
         outfi=open(outfile+".xyz","w")
@@ -46,7 +83,7 @@ class Molecule:
                     else:
                         break
                     #print(li)
-                print("number of Atoms %i "%(numAtoms)) 
+                #print("number of Atoms %i "%(numAtoms)) 
             elif "Coordinates in Geometry Cycle" in li and numAtoms > 0: 
                 outfi=open(outfile+".xyz","a")
                 outfi.write(str(numAtoms))
@@ -90,10 +127,10 @@ class Molecule:
 \\begin{document}
 %\\begin{table}[H]
  \\centering
- \\begin{longtable}{c|c|c|c|c|c}
+ \\begin{longtable}{c|c|c|c|c|c|c}
    \\caption{Excited States and Electron Configurations Table}
    \\hline
-     Energy & Osc. Str. & Transition & Weight & Transition Dipole Moment(x,y,z) & Orb Char (s,p,d)\\\\
+     State & Energy & Osc. Str. & Transition & Weight & Transition Dipole Moment(x,y,z) & Orb Char (s,p,d)\\\\
     \\hline \n 
    \\endfirsthead 
    \\hline
@@ -131,7 +168,9 @@ class Molecule:
         state_num = split_line[0].split(":")
         state_num = state_num[0]
         transition =split_line[1:4]
-        transition = f"{transition[0]} $\\rightarrow$ {transition[2]}"
+        occ_orb = transition[0].replace(" ","")
+        vir_orb = transition[2].replace(" ","")
+        transition = f"{str(occ_orb)} $\\rightarrow$ {str(vir_orb)}"
         #self.Excited_State_Decomp[symmetry][state_num] = {}
         self.Excited_State_Decomp[symmetry][state_num][transition] = [ float(split_line[4]), float(split_line[5]), float(split_line[6]), float(split_line[7]) ]
         #print(self.Excited_State_Decomp)
@@ -165,7 +204,7 @@ class Molecule:
         output = open(outputfilename,'a')
         for exc in states[symmetry]:
             if abs(float(states[symmetry][exc][2+component_indx])) > component_cutoff:
-                output.write(f"{states[symmetry][exc][0]:.2f} &\t {states[symmetry][exc][1]:.2f} &\t &\t &\t {states[symmetry][exc][2]:.2f}, {states[symmetry][exc][3]:.2f}, {states[symmetry][exc][4]:.2f} &\t   \\\\ \n  ")
+                output.write(f"{exc} &\t {states[symmetry][exc][0]:.2f} &\t {states[symmetry][exc][1]:.2f} &\t &\t &\t {states[symmetry][exc][2]:.2f}, {states[symmetry][exc][3]:.2f}, {states[symmetry][exc][4]:.2f} &\t   \\\\ \n  ")
                 for tran in state_decomp[symmetry][exc]:
                     t_split = tran.split("$\\rightarrow$")
                     occ = t_split[0].replace(" ","")
@@ -173,15 +212,14 @@ class Molecule:
                     #print(orbs) 
                     #print(f"occupied orb {occ} unoccupied orb {unocc}")
                     try:
-                        output.write(f"\t& \t& {tran} &\t {state_decomp[symmetry][exc][tran][0]:.4f} &\t {state_decomp[symmetry][exc][tran][1]:.3f}, {state_decomp[symmetry][exc][tran][2]:.3f}, {state_decomp[symmetry][exc][tran][3]:.3f}  &\t {float(orbs[occ][0]):.2f}, {float(orbs[occ][1]):.2f}, {float(orbs[occ][2]):.2f} $\\rightarrow$ {float(orbs[unocc][0]):.2f}, {float(orbs[unocc][1]):.2f}, {float(orbs[unocc][2]):.2f} \\\\ \n ") 
+                        output.write(f"\t& \t& \t& {tran} &\t {state_decomp[symmetry][exc][tran][0]:.4f} &\t {state_decomp[symmetry][exc][tran][1]:.3f}, {state_decomp[symmetry][exc][tran][2]:.3f}, {state_decomp[symmetry][exc][tran][3]:.3f}  &\t {float(orbs[occ][0]):.2f}, {float(orbs[occ][1]):.2f}, {float(orbs[occ][2]):.2f} $\\rightarrow$ {float(orbs[unocc][0]):.2f}, {float(orbs[unocc][1]):.2f}, {float(orbs[unocc][2]):.2f} \\\\ \n ") 
                     
-                    #    output.write(f"\t& \t& {tran} &\t {state_decomp[symmetry][exc][tran][0]} &\t {state_decomp[symmetry][exc][tran][1]}, {state_decomp[symmetry][exc][tran][2]}, {state_decomp[symmetry][exc][tran][3]}  &\t {orbs[occ]} $\\rightarrow$ {orbs[unocc]}  \\\\ \n ") 
-                    #try:
-                    #    output.write(f"\t& \t& {tran} &\t {state_decomp[symmetry][exc][tran][0]} &\t {state_decomp[symmetry][exc][tran][1]}, {state_decomp[symmetry][exc][tran][2]}, {state_decomp[symmetry][exc][tran][3]}  &\t {orbs[occ]} $\\rightarrow$ ?  \\\\ \n ") 
                     except:
-                        output.write(f"\t& \t& {tran} &\t {state_decomp[symmetry][exc][tran][0]:.4f} &\t {state_decomp[symmetry][exc][tran][1]:.3f}, {state_decomp[symmetry][exc][tran][2]:.3f}, {state_decomp[symmetry][exc][tran][3]:.3f}  &\t ? $\\rightarrow$ ?  \\\\ \n ") 
+                        output.write(f"\t& \t& \t& {tran} &\t {state_decomp[symmetry][exc][tran][0]:.4f} &\t {state_decomp[symmetry][exc][tran][1]:.3f}, {state_decomp[symmetry][exc][tran][2]:.3f}, {state_decomp[symmetry][exc][tran][3]:.3f}  &\t ? $\\rightarrow$ ?  \\\\ \n ") 
         output.close()
         self.make_latex_table_end(outputfilename)
+
+
     def localized_orbital_sum(self, split_line):
         char=[0,0]
         if len(split_line) == 11:
@@ -230,7 +268,7 @@ class Molecule:
 #                    line = ADF_Out.readline()    
             line = ADF_Out.readline()
         ADF_Out.close()
-        print(f"Excited States \n {self.Excited_States}")
+        #print(f"Excited States \n {self.Excited_States}")
 
 
     def get_exc_decomp(self, symmetry):
@@ -265,7 +303,7 @@ class Molecule:
                     line = ADF_Out.readline()
             line = ADF_Out.readline()
         ADF_Out.close()
-        print(f"Excited state decompositions \n {self.Excited_State_Decomp}")
+        #print(f"Excited state decompositions \n {self.Excited_State_Decomp}")
 
 
 
@@ -302,7 +340,7 @@ class Molecule:
                          #print(f"{s_char}, {p_char}, {d_char}") 
                          orbital = str(sp_line[2])+str(sp_line[3])
                          orbital = orbital.split(":")
-                         orbital = orbital[0]
+                         orbital = orbital[0].replace(" ","")
                          #orbital= str(sp_line[2])+str(sp_line[3])
                      if len(sp_line) == 7:                         
                          sp_line = line.split()
@@ -322,22 +360,24 @@ class Molecule:
              line = ADF_Out.readline()
           
          ADF_Out.close()
-         print(f"Orbital Energies \n{self.Orbital_Energy}")
-         print(f"Orbital Occ\n{self.Orbital_Occ}") 
-         print(f"Orbital Character \n {self.Orbital_Character}")
+         #print(f"Orbital Energies \n{self.Orbital_Energy}")
+         #print(f"Orbital Occ\n{self.Orbital_Occ}") 
+         #print(f"Orbital Character \n {self.Orbital_Character}")
          print(f"Orbital Localized Character \n {self.Orbital_Localized_Character}")
 
 
 
 #test = Molecule("ag8exc.out","Ag")
 #test.get_MOs()
-#test2 = Molecule("ag19+1exc.out")
-#test2.get_MOs()
-#test2.get_exc_states("A1")
-#test2.get_exc_decomp("A1")
+test2 = Molecule("pyr_edge_exc.out")
+test2.get_MOs()
+test2.get_exc_states("A")
+test2.get_exc_decomp("A")
+#test2.print_by_transition_dipole_moment("A1", 2, 2.2,"test.tex")
+test2.calc_ct_character("A")
+
 #
 #print(test2.Excited_State_Decomp["A1"]["1"])
-#test2.print_by_transition_dipole_moment("A1", 2, 2.2,"test.tex")
 
 
 
