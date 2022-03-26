@@ -17,21 +17,93 @@ class Molecule:
     Excited_States= {} # {Symm:{exc_num: [energy, osc_str, tdm_x, tdm_y, tdm_z]} } 
     Excited_State_Decomp = {} # {Symm: {Exc_num:{transition label: [weight, tdm_x, tdm_y, tdm_z]} } }
     CT_Osc_Product ={} #{Symm: {Exc_num: CT_char*osc_str}}
-    CT_Excited_State=[] #{Symm: {Exc_num: CT_char}}
+    CT_Excited_State={} #{Symm: {Exc_num: CT_char}}
 
     def __init__(self, ADF_Outname, metal="Ag"):
         self.filename = str(ADF_Outname)
         self.metal_type = metal 
 
 
+    def make_ct_table(self, symmetry, component_cutoff, outfile):
+        '''
+        prints latex table of excited state properties:
+        state number, state energy, oscillator strength, charge transfer character
+            , transition , weight, orbital character
+        '''
+        header='''\\documentclass[10pt,a4paper]{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage[T1]{fontenc}
+\\usepackage{subfig}
+\\usepackage{amsmath}
+\\usepackage{float}
+\\usepackage{amsfonts}
+\\usepackage{amssymb}
+\\usepackage{graphicx}
+\\usepackage{ragged2e}
+\\usepackage[margin=.75in]{geometry}
+\\usepackage[english]{babel}
+\\usepackage{comment}
+\\usepackage{longtable}
+\\begin{document}
+%\\begin{table}[H]
+ \\centering
+ \\begin{longtable}{c|c|c|c}
+   \\caption{Excited States and Electron Configurations Table}
+   \\hline
+     State & Energy/transition & Osc. Str./weight & charge transfer/Orb Char (s,p,d)\\\\
+    \\hline \n 
+   \\endfirsthead 
+   \\hline
+   \\endhead
+   \\hline
+   \\endfoot
+   \\endlastfoot 
+'''
+        out = open(outfile,'w')
+        out.write(header)
+        out.close()
+
+        states = self.Excited_States
+        state_decomp = self.Excited_State_Decomp
+        ct_char = self.CT_Excited_State
+        ct_osc_prod = self.CT_Osc_Product
+        orbs = self.Orbital_Character
+        output = open(outfile,'a')
+        print(self.CT_Osc_Product)
+        print(self.CT_Excited_State)
+        for exc in states[symmetry]:
+            if abs(float(ct_osc_prod[symmetry][exc])) > component_cutoff:
+                output.write(f"{exc} &\t {states[symmetry][exc][0]:.2f} &\t {states[symmetry][exc][1]:.2f} &\t {ct_char[symmetry][exc]:.2f} \\\\ \n  ")
+                for tran in state_decomp[symmetry][exc]:
+                    t_split = tran.split("$\\rightarrow$")
+                    occ = t_split[0].replace(" ","")
+                    unocc = t_split[1].replace(" ","")
+                    #print(orbs) 
+                    #print(f"occupied orb {occ} unoccupied orb {unocc}")
+                    try:
+                        output.write(f"\t& {tran} &\t {state_decomp[symmetry][exc][tran][0]:.4f} &\t {float(orbs[occ][0]):.2f}, {float(orbs[occ][1]):.2f}, {float(orbs[occ][2]):.2f} $\\rightarrow$ {float(orbs[unocc][0]):.2f}, {float(orbs[unocc][1]):.2f}, {float(orbs[unocc][2]):.2f} \\\\ \n ") 
+                    
+                    except:
+                        output.write(f"\t& {tran} &\t {state_decomp[symmetry][exc][tran][0]:.4f} &\t ? $\\rightarrow$ ?  \\\\ \n ") 
+        output.close()
+        self.make_latex_table_end(outfile)
+
+
+
 
     def calc_ct_character(self, symm):
         ''' 
         calculates charge transfer character of excited state from orbitals localized on metal or molecule
-        '''       
+        '''
+        ct_osc={}
+        ct_exc={}
+        self.CT_Excited_State[symm]={}     
+        self.CT_Osc_Product[symm]={}     
         for state in self.Excited_State_Decomp[symm]:
+            self.CT_Excited_State[symm][state]={}     
+            self.CT_Osc_Product[symm][state]={}
             occ_vir_diff = [0,0]#[part metal , part molecule] 
-            print("")
+            #print("")
             for transition in self.Excited_State_Decomp[symm][state]:
                 weight = self.Excited_State_Decomp[symm][state][transition][0]
                 transition = transition.split("$\\rightarrow$")
@@ -46,17 +118,17 @@ class Molecule:
                     print(f"orbital {vir_orb} is not in your list of orbitals") 
                     pass
                     #vir_norm=[0,0]
-                print(f"occ_norm {occ_norm} vir_norm {vir_norm}")
-                #for i in range(len(occ_norm)):
-                #    occ_vir_diff[i] += (occ_norm[i] - vir_norm[i]) * weight
+                #print(f"occ_norm {occ_norm} vir_norm {vir_norm}")
                 occ_vir_diff[0] += (occ_norm[0] - vir_norm[0]) * weight
-                print(f"ct {state} : {occ_vir_diff}")
+                #print(f"ct {state} : {occ_vir_diff}") 
             try:
-                print(f"ct*osc_str : {occ_vir_diff[0]*float(self.Excited_States[symm][state][1])} ")                 
-                self.CT_Excited_State[symm][state]=float(self.Excited_States[symm][state][1])
+                #print(f"ct*osc_str : {occ_vir_diff[0]*float(self.Excited_States[symm][state][1])} ")                 
+                self.CT_Excited_State[symm][state]=occ_vir_diff[0]
                 self.CT_Osc_Product[symm][state]=occ_vir_diff[0]*float(self.Excited_States[symm][state][1])
-            except: 
-                continue
+            except:
+                pass 
+                
+
 
     
     def make_xyz(self, outfile):
@@ -365,7 +437,7 @@ class Molecule:
          #print(f"Orbital Energies \n{self.Orbital_Energy}")
          #print(f"Orbital Occ\n{self.Orbital_Occ}") 
          #print(f"Orbital Character \n {self.Orbital_Character}")
-         print(f"Orbital Localized Character \n {self.Orbital_Localized_Character}")
+         #print(f"Orbital Localized Character \n {self.Orbital_Localized_Character}")
 
 
 
@@ -377,6 +449,7 @@ test2.get_exc_states("A")
 test2.get_exc_decomp("A")
 #test2.print_by_transition_dipole_moment("A1", 2, 2.2,"test.tex")
 test2.calc_ct_character("A")
+test2.make_ct_table("A", 0.01, "test.tex")
 
 #
 #print(test2.Excited_State_Decomp["A1"]["1"])
