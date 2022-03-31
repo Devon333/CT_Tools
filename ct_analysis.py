@@ -1,5 +1,5 @@
 #**************************************************************************
-# Molecule class Reads ADF output, organizes MOs, organizes excited state 
+#lecule class Reads ADF output, organizes MOs, organizes excited state 
 # info by symmetry 
 # Alva Dillon, Hongyi Wu, Hanwen Liu Spring 2022
 #**************************************************************************
@@ -81,7 +81,8 @@ class Molecule:
                     #print(orbs) 
                     #print(f"occupied orb {occ} unoccupied orb {unocc}")
                     try:
-                        output.write(f"\t& {tran} &\t {state_decomp[symmetry][exc][tran][0]:.4f} &\t {float(orbs[occ][0]):.2f}, {float(orbs[occ][1]):.2f}, {float(orbs[occ][2]):.2f} $\\rightarrow$ {float(orbs[unocc][0]):.2f}, {float(orbs[unocc][1]):.2f}, {float(orbs[unocc][2]):.2f} \\\\ \n ") 
+                        if float(state_decomp[symmetry][exc][tran][0])>0.1: 
+                            output.write(f"\t& {occ}({self.Orbital_Localized_Character[occ][0]:.2f})$\\rightarrow${unocc}({self.Orbital_Localized_Character[unocc][0]:.2f}) &\t {state_decomp[symmetry][exc][tran][0]:.4f} &\t {float(orbs[occ][0]):.2f}, {float(orbs[occ][1]):.2f}, {float(orbs[occ][2]):.2f} $\\rightarrow$ {float(orbs[unocc][0]):.2f}, {float(orbs[unocc][1]):.2f}, {float(orbs[unocc][2]):.2f} \\\\ \n ") 
                     
                     except:
                         output.write(f"\t& {tran} &\t {state_decomp[symmetry][exc][tran][0]:.4f} &\t ? $\\rightarrow$ ?  \\\\ \n ") 
@@ -453,6 +454,7 @@ test2.make_ct_table("A", 0.01, "test.tex")
 
 #
 #print(test2.Excited_State_Decomp["A1"]["1"])
+
 
 
 
