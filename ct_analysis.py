@@ -1,5 +1,5 @@
 #**************************************************************************
-#lecule class Reads ADF output, organizes MOs, organizes excited state 
+# Molecule class Reads ADF output, organizes MOs, organizes excited state 
 # info by symmetry 
 # Alva Dillon, Hongyi Wu, Hanwen Liu Spring 2022
 #**************************************************************************
@@ -11,8 +11,10 @@ class Molecule:
     filename = None
     Orbital_Occ = {} # {orbital label: occupation}
     Orbital_Energy = {} # {orbital label: MO Energy}
+    Orbital_Localized_Character_Norm = {} # {orbital label: [percent metal , percent molecule]}
     Orbital_Localized_Character = {} # {orbital label: [percent metal , percent molecule]}
     Orbital_Character = {} # {orbital label:[s character, p character, d character]}
+    Orbital_Character_Norm = {} # {orbital label:[s character, p character, d character]}
     metal_type= None
     Excited_States= {} # {Symm:{exc_num: [energy, osc_str, tdm_x, tdm_y, tdm_z]} } 
     Excited_State_Decomp = {} # {Symm: {Exc_num:{transition label: [weight, tdm_x, tdm_y, tdm_z]} } }
@@ -22,6 +24,21 @@ class Molecule:
     def __init__(self, ADF_Outname, metal="Ag"):
         self.filename = str(ADF_Outname)
         self.metal_type = metal 
+        self.get_MOs()
+        self.orb_character_norm()
+          
+
+
+
+    def orb_character_norm(self):
+        '''
+        normalizes s,p,d character of molecular orbitals
+        '''
+        for orb in self.Orbital_Character:
+            self.Orbital_Character_Norm[orb] = [float(i)/sum(self.Orbital_Character[orb]) for i in self.Orbital_Character[orb]]
+
+
+
 
 
     def make_ct_table(self, symmetry, component_cutoff, outfile):
@@ -67,10 +84,10 @@ class Molecule:
         state_decomp = self.Excited_State_Decomp
         ct_char = self.CT_Excited_State
         ct_osc_prod = self.CT_Osc_Product
-        orbs = self.Orbital_Character
+        orbs = self.Orbital_Character_Norm
         output = open(outfile,'a')
-        print(self.CT_Osc_Product)
-        print(self.CT_Excited_State)
+        #print(self.CT_Osc_Product)
+        #print(self.CT_Excited_State)
         for exc in states[symmetry]:
             if abs(float(ct_osc_prod[symmetry][exc])) > component_cutoff:
                 output.write(f"{exc} &\t {states[symmetry][exc][0]:.2f} &\t {states[symmetry][exc][1]:.2f} &\t {ct_char[symmetry][exc]:.2f} \\\\ \n  ")
@@ -81,11 +98,11 @@ class Molecule:
                     #print(orbs) 
                     #print(f"occupied orb {occ} unoccupied orb {unocc}")
                     try:
-                        if float(state_decomp[symmetry][exc][tran][0])>0.1: 
-                            output.write(f"\t& {occ}({self.Orbital_Localized_Character[occ][0]:.2f})$\\rightarrow${unocc}({self.Orbital_Localized_Character[unocc][0]:.2f}) &\t {state_decomp[symmetry][exc][tran][0]:.4f} &\t {float(orbs[occ][0]):.2f}, {float(orbs[occ][1]):.2f}, {float(orbs[occ][2]):.2f} $\\rightarrow$ {float(orbs[unocc][0]):.2f}, {float(orbs[unocc][1]):.2f}, {float(orbs[unocc][2]):.2f} \\\\ \n ") 
-                    
+                        if float(state_decomp[symmetry][exc][tran][0]) > 0.1: 
+                            output.write(f"\t& {occ}({self.Orbital_Localized_Character_Norm[occ][0]:.2f})$\\rightarrow${unocc}({self.Orbital_Localized_Character_Norm[unocc][0]:.2f}) &\t {state_decomp[symmetry][exc][tran][0]:.4f} &\t {float(orbs[occ][0]):.2f}, {float(orbs[occ][1]):.2f}, {float(orbs[occ][2]):.2f} $\\rightarrow$ {float(orbs[unocc][0]):.2f}, {float(orbs[unocc][1]):.2f}, {float(orbs[unocc][2]):.2f} \\\\ \n ")                     
                     except:
                         output.write(f"\t& {tran} &\t {state_decomp[symmetry][exc][tran][0]:.4f} &\t ? $\\rightarrow$ ?  \\\\ \n ") 
+                output.write("\\hline")
         output.close()
         self.make_latex_table_end(outfile)
 
@@ -98,7 +115,8 @@ class Molecule:
         '''
         ct_osc={}
         ct_exc={}
-        self.CT_Excited_State[symm]={}     
+        self.CT_Excited_State[symm]={}
+        self.Orbital_Localized_Character_Norm = {}
         self.CT_Osc_Product[symm]={}     
         for state in self.Excited_State_Decomp[symm]:
             self.CT_Excited_State[symm][state]={}     
@@ -110,13 +128,18 @@ class Molecule:
                 transition = transition.split("$\\rightarrow$")
                 occ_orb = transition[0].replace(" ", "")
                 vir_orb = transition[1].replace(" ", "")
+                self.Orbital_Localized_Character_Norm[occ_orb] = []
+                self.Orbital_Localized_Character_Norm[vir_orb] = []
+             
                 #occ_char = self.Orbital_Localized_Character[occ_orb]
                 occ_norm = [float(i)/sum(self.Orbital_Localized_Character[occ_orb]) for i in self.Orbital_Localized_Character[occ_orb]]
+                self.Orbital_Localized_Character_Norm[occ_orb]=occ_norm
                 #vir_char = self.Orbital_Localized_Character[vir_orb]
                 try:
                     vir_norm = [float(i)/sum(self.Orbital_Localized_Character[vir_orb]) for i in self.Orbital_Localized_Character[vir_orb]]
+                    self.Orbital_Localized_Character_Norm[vir_orb]=vir_norm
                 except:
-                    print(f"orbital {vir_orb} is not in your list of orbitals") 
+                    #print(f"orbital {vir_orb} is not in your list of orbitals") 
                     pass
                     #vir_norm=[0,0]
                 #print(f"occ_norm {occ_norm} vir_norm {vir_norm}")
@@ -406,7 +429,7 @@ class Molecule:
                          self.fill_orbital_energy(sp_line)
                          char_type = self.character_type_sum(sp_line)  
                          loc_type = self.localized_orbital_sum(sp_line)
-#                         print(char_type)
+                         #print(char_type)
                          metal_char += loc_type[0]
                          mol_char += loc_type[1]
                          s_char += char_type[0]
@@ -430,7 +453,7 @@ class Molecule:
                          mol_char += loc_type[1] 
                          #print(f"{s_char}, {p_char}, {d_char}") 
                          self.fill_orbital_characters(orbital,s_char,p_char,d_char)
-                         self.fill_localized_characters(orbital,metal_char,mol_char)                    
+                         self.fill_localized_characters(orbital,metal_char,mol_char)                         
                      line = ADF_Out.readline()
              line = ADF_Out.readline()
           
