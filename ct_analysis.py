@@ -75,6 +75,7 @@ class Molecule:
         prints latex table of excited state properties:
         state number, state energy, oscillator strength, charge transfer character
             , transition , weight, orbital character
+        component_cutoff is for charge transfer oscillator strength product
         '''
         header='''\\documentclass[10pt,a4paper]{article}
 \\usepackage[utf8]{inputenc}
@@ -127,7 +128,7 @@ class Molecule:
                     #print(orbs) 
                     #print(f"occupied orb {occ} unoccupied orb {unocc}")
                     try:
-                        if float(state_decomp[symmetry][exc][tran][0]) > 0.1: 
+                        if float(state_decomp[symmetry][exc][tran][0]) > 0.01: 
                             output.write(f"\t& {occ}({self.Orbital_Localized_Character_Norm[occ][0]:.2f})$\\rightarrow${unocc}({self.Orbital_Localized_Character_Norm[unocc][0]:.2f}) &\t {state_decomp[symmetry][exc][tran][0]:.4f} &\t {float(orbs[occ][0]):.2f}, {float(orbs[occ][1]):.2f}, {float(orbs[occ][2]):.2f} $\\rightarrow$ {float(orbs[unocc][0]):.2f}, {float(orbs[unocc][1]):.2f}, {float(orbs[unocc][2]):.2f} \\\\ \n ")                     
                     except:
                         output.write(f"\t& {tran} &\t {state_decomp[symmetry][exc][tran][0]:.4f} &\t ? $\\rightarrow$ ?  \\\\ \n ") 
@@ -495,6 +496,7 @@ class Molecule:
 
 
 #test = Molecule("ag8exc.out","Ag")
+<<<<<<< HEAD
 #test.get_MOs()
 test2 = Molecule("pyr_edge_exc.out")
 test2.get_MOs()
@@ -504,6 +506,17 @@ test2.get_exc_decomp("A")
 test2.calc_ct_character("A")
 test2.make_ct_table("A", 0.01, "test.tex")
 test2.make_lorentzian_plot("A", 6, "test.png")
+=======
+##test.get_MOs()
+##test2 = Molecule("pyr_edge_exc.out")
+##test2.get_MOs()
+##test2.get_exc_states("A")
+##test2.get_exc_decomp("A")
+##test2.print_by_transition_dipole_moment("A1", 2, 2.2,"test.tex")
+##test2.calc_ct_character("A")
+##test2.make_ct_table("A", 0.01, "test.tex")
+
+>>>>>>> bfdef4112c38b08920abc293a23e03488e7d9614
 #
 #print(test2.Excited_State_Decomp["A1"]["1"])
 
