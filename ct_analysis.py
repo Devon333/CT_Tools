@@ -36,10 +36,14 @@ class Molecule:
         energy_step= 0.02
         steps = int(max_energy/energy_step) + 1
         intensity = []
+        intensity2 = []
         en_ax = []
         for i in range(0,steps):
             en_ax.append(float(i*energy_step))
             intensity.append(0.0)
+            intensity2.append(0.0)
+
+        #CT_Excited_State={} #{Symm: {Exc_num: CT_char}}
         #Excited_States= {} # {Symm:{exc_num: [energy,
         for exc_num in self.Excited_States[symmetry]:
             for i in range(len(intensity)):
@@ -47,11 +51,20 @@ class Molecule:
                 phi = gamma /(((energy_point - float(self.Excited_States[symmetry][exc_num][0]))**2 + gamma**2)* math.pi) 
                 if "E" in symmetry:
                     intensity[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 2     
+                    intensity2[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 2
                 if "A" in symmetry or "S" in sym[en] or "B" in sym[en]:
                     intensity[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 1     
+                    intensity2[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 1
         #print(f"intensity {intensity}")
         fig = plt.figure(figsize=(18,14))
-        plt.plot(en_ax, intensity)
+        plt.rcParams.update({'font.size': 38, 'font.weight':'bold'})
+        ax = fig.add_subplot(111)
+        ax2 = ax.twinx()
+        ax.plot(en_ax, intensity)
+        ax.set_xlabel("x label")
+        ax.set_ylabel("label1")
+        ax2.plot(en_ax, intensity2)
+        ax2.set_ylabel("label2")
         plt.show()
 
 
@@ -496,7 +509,6 @@ class Molecule:
 
 
 #test = Molecule("ag8exc.out","Ag")
-<<<<<<< HEAD
 #test.get_MOs()
 test2 = Molecule("pyr_edge_exc.out")
 test2.get_MOs()
@@ -506,17 +518,6 @@ test2.get_exc_decomp("A")
 test2.calc_ct_character("A")
 test2.make_ct_table("A", 0.01, "test.tex")
 test2.make_lorentzian_plot("A", 6, "test.png")
-=======
-##test.get_MOs()
-##test2 = Molecule("pyr_edge_exc.out")
-##test2.get_MOs()
-##test2.get_exc_states("A")
-##test2.get_exc_decomp("A")
-##test2.print_by_transition_dipole_moment("A1", 2, 2.2,"test.tex")
-##test2.calc_ct_character("A")
-##test2.make_ct_table("A", 0.01, "test.tex")
-
->>>>>>> bfdef4112c38b08920abc293a23e03488e7d9614
 #
 #print(test2.Excited_State_Decomp["A1"]["1"])
 
