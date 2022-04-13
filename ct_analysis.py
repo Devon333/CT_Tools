@@ -51,10 +51,10 @@ class Molecule:
                 phi = gamma /(((energy_point - float(self.Excited_States[symmetry][exc_num][0]))**2 + gamma**2)* math.pi) 
                 if "E" in symmetry:
                     intensity[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 2     
-                    intensity2[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 2
+                    #intensity2[i] += phi * float(CT_Excited_State...) * float(self.Excited_States[symmetry][exc_num][1]) * 2
                 if "A" in symmetry or "S" in sym[en] or "B" in sym[en]:
                     intensity[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 1     
-                    intensity2[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 1
+                    #intensity2[i] += phi * float(CT_Excited_State...) * float(self.Excited_States[symmetry][exc_num][1]) * 1
         #print(f"intensity {intensity}")
         fig = plt.figure(figsize=(18,14))
         plt.rcParams.update({'font.size': 38, 'font.weight':'bold'})
