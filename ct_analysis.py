@@ -29,6 +29,11 @@ class Molecule:
           
  
     def make_lorentzian_plot(self, symmetry, max_energy, plot_name):
+        '''
+        Function to make absorption spectra and the absorption spectra scaled by charge transfer for each excited state
+        input required: symmetry of system, maximum energy of absorption spectra, name of .png file
+        '''
+
         import math
         import matplotlib.pyplot as plt
         #lorentezian parameters
@@ -51,21 +56,21 @@ class Molecule:
                 phi = gamma /(((energy_point - float(self.Excited_States[symmetry][exc_num][0]))**2 + gamma**2)* math.pi) 
                 if "E" in symmetry:
                     intensity[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 2     
-                    #intensity2[i] += phi * float(CT_Excited_State...) * float(self.Excited_States[symmetry][exc_num][1]) * 2
+                    intensity2[i] += phi * float(self.CT_Excited_State[symmetry][exc_num]) * float(self.Excited_States[symmetry][exc_num][1]) * 2
                 if "A" in symmetry or "S" in sym[en] or "B" in sym[en]:
                     intensity[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 1     
-                    #intensity2[i] += phi * float(CT_Excited_State...) * float(self.Excited_States[symmetry][exc_num][1]) * 1
+                    intensity2[i] += phi * float(self.CT_Excited_State[symmetry][exc_num]) * float(self.Excited_States[symmetry][exc_num][1]) * 1
         #print(f"intensity {intensity}")
         fig = plt.figure(figsize=(18,14))
         plt.rcParams.update({'font.size': 38, 'font.weight':'bold'})
         ax = fig.add_subplot(111)
-        ax2 = ax.twinx()
-        ax.plot(en_ax, intensity)
+        #ax2 = ax.twinx()
+        ax.plot(en_ax, intensity,'-b')
         ax.set_xlabel("x label")
         ax.set_ylabel("label1")
-        ax2.plot(en_ax, intensity2)
-        ax2.set_ylabel("label2")
-        plt.show()
+        ax.plot(en_ax, intensity2,'-r')
+        ax.set_ylabel("label2")
+        plt.savefig(f"{plot_name}.png")
 
 
 
@@ -517,7 +522,7 @@ test2.get_exc_decomp("A")
 #test2.print_by_transition_dipole_moment("A1", 2, 2.2,"test.tex")
 test2.calc_ct_character("A")
 test2.make_ct_table("A", 0.01, "test.tex")
-test2.make_lorentzian_plot("A", 6, "test.png")
+test2.make_lorentzian_plot("A", 6, "test")
 #
 #print(test2.Excited_State_Decomp["A1"]["1"])
 
