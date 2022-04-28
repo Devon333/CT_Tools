@@ -18,8 +18,8 @@ class Molecule:
     metal_type= None
     Excited_States= {} # {Symm:{exc_num: [energy, osc_str, tdm_x, tdm_y, tdm_z]} } 
     Excited_State_Decomp = {} # {Symm: {Exc_num:{transition label: [weight, tdm_x, tdm_y, tdm_z]} } }
-    CT_Osc_Product ={} #{Symm: {Exc_num: CT_char*osc_str}}
-    CT_Excited_State={} #{Symm: {Exc_num: CT_char}}
+    CT_Osc_Product ={} #{Symm: {Exc_num: [metal_CT_char*osc_str, mol_CT_char*osc_str]}}
+    CT_Excited_State={} #{Symm: {Exc_num: [metal_CT_char, mol_CT_char]}}
 
     def __init__(self, ADF_Outname, metal="Ag"):
         self.filename = str(ADF_Outname)
@@ -56,10 +56,10 @@ class Molecule:
                 phi = gamma /(((energy_point - float(self.Excited_States[symmetry][exc_num][0]))**2 + gamma**2)* math.pi) 
                 if "E" in symmetry:
                     intensity[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 2     
-                    intensity2[i] += phi * float(self.CT_Excited_State[symmetry][exc_num]) * float(self.Excited_States[symmetry][exc_num][1]) * 2
+                    intensity2[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][0]) * float(self.Excited_States[symmetry][exc_num][1]) * 2
                 if "A" in symmetry or "S" in sym[en] or "B" in sym[en]:
                     intensity[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 1     
-                    intensity2[i] += phi * float(self.CT_Excited_State[symmetry][exc_num]) * float(self.Excited_States[symmetry][exc_num][1]) * 1
+                    intensity2[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][0]) * float(self.Excited_States[symmetry][exc_num][1]) * 1
         #print(f"intensity {intensity}")
         fig = plt.figure(figsize=(18,14))
         plt.rcParams.update({'font.size': 38, 'font.weight':'bold'})
@@ -137,7 +137,7 @@ class Molecule:
         #print(self.CT_Osc_Product)
         #print(self.CT_Excited_State)
         for exc in states[symmetry]:
-            if abs(float(ct_osc_prod[symmetry][exc])) > component_cutoff:
+            if abs(float(ct_osc_prod[symmetry][exc][0])) > component_cutoff:
                 output.write(f"{exc} &\t {states[symmetry][exc][0]:.2f} &\t {states[symmetry][exc][1]:.2f} &\t {ct_char[symmetry][exc]:.2f} \\\\ \n  ")
                 for tran in state_decomp[symmetry][exc]:
                     t_split = tran.split("$\\rightarrow$")
@@ -166,10 +166,13 @@ class Molecule:
         self.CT_Excited_State[symm]={}
         self.Orbital_Localized_Character_Norm = {}
         self.CT_Osc_Product[symm]={}     
+        count=100
         for state in self.Excited_State_Decomp[symm]:
             self.CT_Excited_State[symm][state]={}     
             self.CT_Osc_Product[symm][state]={}
-            occ_vir_diff = [0,0]#[part metal , part molecule] 
+            #occ_vir_diff = [0,0]#[part metal , part molecule]
+            metal_ct = 0.0
+            mol_ct = 0.0
             #print("")
             for transition in self.Excited_State_Decomp[symm][state]:
                 weight = self.Excited_State_Decomp[symm][state][transition][0]
@@ -177,11 +180,14 @@ class Molecule:
                 occ_orb = transition[0].replace(" ", "")
                 vir_orb = transition[1].replace(" ", "")
                 self.Orbital_Localized_Character_Norm[occ_orb] = []
-                self.Orbital_Localized_Character_Norm[vir_orb] = []
-             
+                self.Orbital_Localized_Character_Norm[vir_orb] = [] 
                 #occ_char = self.Orbital_Localized_Character[occ_orb]
                 occ_norm = [float(i)/sum(self.Orbital_Localized_Character[occ_orb]) for i in self.Orbital_Localized_Character[occ_orb]]
                 self.Orbital_Localized_Character_Norm[occ_orb]=occ_norm
+                print(occ_norm)
+                count +=1 
+                if count == 100:
+                    exit()
                 #vir_char = self.Orbital_Localized_Character[vir_orb]
                 try:
                     vir_norm = [float(i)/sum(self.Orbital_Localized_Character[vir_orb]) for i in self.Orbital_Localized_Character[vir_orb]]
@@ -191,12 +197,14 @@ class Molecule:
                     pass
                     #vir_norm=[0,0]
                 #print(f"occ_norm {occ_norm} vir_norm {vir_norm}")
-                occ_vir_diff[0] += (occ_norm[0] - vir_norm[0]) * weight
+                metal_ct += (occ_norm[0] - vir_norm[0]) * weight
+                mol_ct += (occ_norm[1] - vir_norm[1]) * weight
                 #print(f"ct {state} : {occ_vir_diff}") 
             try:
+                occ_vir_diff=[metal_ct, mol_ct] #occ_vir_diff = [part metal , part molecule]
                 #print(f"ct*osc_str : {occ_vir_diff[0]*float(self.Excited_States[symm][state][1])} ")                 
-                self.CT_Excited_State[symm][state]=occ_vir_diff[0]
-                self.CT_Osc_Product[symm][state]=occ_vir_diff[0]*float(self.Excited_States[symm][state][1])
+                self.CT_Excited_State[symm][state]=occ_vir_diff
+                self.CT_Osc_Product[symm][state]=[occ_vir_diff[0]*float(self.Excited_States[symm][state][1]), occ_vir_diff[1]*float(self.Excited_States[symm][state][1]) ]
             except:
                 pass 
                 
