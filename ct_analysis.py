@@ -42,11 +42,13 @@ class Molecule:
         steps = int(max_energy/energy_step) + 1
         intensity = []
         intensity2 = []
+        intensity3 = []
         en_ax = []
         for i in range(0,steps):
             en_ax.append(float(i*energy_step))
             intensity.append(0.0)
             intensity2.append(0.0)
+            intensity3.append(0.0)
 
         #CT_Excited_State={} #{Symm: {Exc_num: CT_char}}
         #Excited_States= {} # {Symm:{exc_num: [energy,
@@ -57,19 +59,23 @@ class Molecule:
                 if "E" in symmetry:
                     intensity[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 2     
                     intensity2[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][0]) * float(self.Excited_States[symmetry][exc_num][1]) * 2
+                    intensity3[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][1]) * float(self.Excited_States[symmetry][exc_num][1]) * 2
                 if "A" in symmetry or "S" in sym[en] or "B" in sym[en]:
                     intensity[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 1     
-                    intensity2[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][0]) * float(self.Excited_States[symmetry][exc_num][1]) * 1
+                    intensity2[i] += phi * abs(float(self.CT_Excited_State[symmetry][exc_num][0])) * float(self.Excited_States[symmetry][exc_num][1]) * 1
+                    intensity3[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][1]) * float(self.Excited_States[symmetry][exc_num][1]) * 1
         #print(f"intensity {intensity}")
-        fig = plt.figure(figsize=(18,14))
+        fig = plt.figure(figsize=(12,10))
         plt.rcParams.update({'font.size': 38, 'font.weight':'bold'})
         ax = fig.add_subplot(111)
         #ax2 = ax.twinx()
         ax.plot(en_ax, intensity,'-b')
         ax.set_xlabel("x label")
-        ax.set_ylabel("label1")
+        ax.set_ylabel("total")
         ax.plot(en_ax, intensity2,'-r')
-        ax.set_ylabel("label2")
+        ax.set_ylabel("metal")
+        ax.plot(en_ax, intensity3,'-g')
+        ax.set_ylabel("molecule")
         plt.savefig(f"{plot_name}.png")
 
 
@@ -138,7 +144,7 @@ class Molecule:
         #print(self.CT_Excited_State)
         for exc in states[symmetry]:
             if abs(float(ct_osc_prod[symmetry][exc][0])) > component_cutoff:
-                output.write(f"{exc} &\t {states[symmetry][exc][0]:.2f} &\t {states[symmetry][exc][1]:.2f} &\t {ct_char[symmetry][exc]:.2f} \\\\ \n  ")
+                output.write(f"{exc} &\t {states[symmetry][exc][0]:.2f} &\t {states[symmetry][exc][1]:.2f} &\t {ct_char[symmetry][exc][0]:.2f} \\\\ \n  ")
                 for tran in state_decomp[symmetry][exc]:
                     t_split = tran.split("$\\rightarrow$")
                     occ = t_split[0].replace(" ","")
@@ -166,7 +172,7 @@ class Molecule:
         self.CT_Excited_State[symm]={}
         self.Orbital_Localized_Character_Norm = {}
         self.CT_Osc_Product[symm]={}     
-        count=100
+        count=1000
         for state in self.Excited_State_Decomp[symm]:
             self.CT_Excited_State[symm][state]={}     
             self.CT_Osc_Product[symm][state]={}
@@ -184,14 +190,15 @@ class Molecule:
                 #occ_char = self.Orbital_Localized_Character[occ_orb]
                 occ_norm = [float(i)/sum(self.Orbital_Localized_Character[occ_orb]) for i in self.Orbital_Localized_Character[occ_orb]]
                 self.Orbital_Localized_Character_Norm[occ_orb]=occ_norm
-                print(occ_norm)
+                #print(f"occupied_norm {occ_norm}")
                 count +=1 
-                if count == 100:
+                if count == 1000:
                     exit()
                 #vir_char = self.Orbital_Localized_Character[vir_orb]
                 try:
                     vir_norm = [float(i)/sum(self.Orbital_Localized_Character[vir_orb]) for i in self.Orbital_Localized_Character[vir_orb]]
                     self.Orbital_Localized_Character_Norm[vir_orb]=vir_norm
+                    print(f"virtual_norm {vir_norm}")
                 except:
                     #print(f"orbital {vir_orb} is not in your list of orbitals") 
                     pass
@@ -199,9 +206,9 @@ class Molecule:
                 #print(f"occ_norm {occ_norm} vir_norm {vir_norm}")
                 metal_ct += (occ_norm[0] - vir_norm[0]) * weight
                 mol_ct += (occ_norm[1] - vir_norm[1]) * weight
-                #print(f"ct {state} : {occ_vir_diff}") 
             try:
                 occ_vir_diff=[metal_ct, mol_ct] #occ_vir_diff = [part metal , part molecule]
+                #print(f"ct {state} : {occ_vir_diff}") 
                 #print(f"ct*osc_str : {occ_vir_diff[0]*float(self.Excited_States[symm][state][1])} ")                 
                 self.CT_Excited_State[symm][state]=occ_vir_diff
                 self.CT_Osc_Product[symm][state]=[occ_vir_diff[0]*float(self.Excited_States[symm][state][1]), occ_vir_diff[1]*float(self.Excited_States[symm][state][1]) ]
