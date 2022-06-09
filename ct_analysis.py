@@ -62,12 +62,12 @@ class Molecule:
                     intensity[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 2     
                     intensity2[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][0]) * float(self.Excited_States[symmetry][exc_num][1]) * 2
                     intensity3[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][1]) * float(self.Excited_States[symmetry][exc_num][1]) * 2
-                    intensity4[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][1]) * float(self.Excited_States[symmetry][exc_num][1]) * 2
+                    #intensity4[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][1]) * float(self.Excited_States[symmetry][exc_num][1]) * 2
                 if "A" in symmetry or "S" in sym[en] or "B" in sym[en]:
                     intensity[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 1     
                     intensity2[i] += phi * (float(self.CT_Excited_State[symmetry][exc_num][0])) * float(self.Excited_States[symmetry][exc_num][1]) * 1
                     intensity3[i] += phi * (float(self.CT_Excited_State[symmetry][exc_num][1])) * float(self.Excited_States[symmetry][exc_num][1]) * 1
-                    intensity4[i] += phi * abs(float(self.CT_Excited_State[symmetry][exc_num][1])) * float(self.Excited_States[symmetry][exc_num][1]) * 1
+                    #intensity4[i] += phi * abs(float(self.CT_Excited_State[symmetry][exc_num][1])) * float(self.Excited_States[symmetry][exc_num][1]) * 1
         #print(f"intensity {intensity}")
         fig = plt.figure(figsize=(12,10))
         plt.rcParams.update({'font.size': 38, 'font.weight':'bold'})
@@ -80,9 +80,10 @@ class Molecule:
         ax.plot(en_ax, intensity2,'-r',label="metal ct")
        # ax.set_ylabel("metal")
         ax.plot(en_ax, intensity3,'-g', label="mol ct")
-        ax.plot(en_ax, intensity4,'-m', label="abs ct")
+        #ax.plot(en_ax, intensity4,'-m', label="abs ct")
         ax.set_ylabel("Intensity")
         plt.legend(prop={'size': 15})
+        #plt.show()
         plt.savefig(f"{plot_name}.png")
 
 
@@ -150,8 +151,8 @@ class Molecule:
         #print(self.CT_Osc_Product)
         #print(self.CT_Excited_State)
         for exc in states[symmetry]:
-            if abs(float(ct_osc_prod[symmetry][exc][0])) > component_cutoff:
-                output.write(f"{exc} &\t {states[symmetry][exc][0]:.2f} &\t {states[symmetry][exc][1]:.2f} &\t {ct_char[symmetry][exc][0]:.2f} \\\\ \n  ")
+            if abs(float(ct_osc_prod[symmetry][exc][1])) > component_cutoff or abs(float(ct_osc_prod[symmetry][exc][0])) > component_cutoff:
+                output.write(f"{exc} &\t {states[symmetry][exc][0]:.2f} &\t {states[symmetry][exc][1]:.2f} &\t {ct_char[symmetry][exc][0]:.2f},{ct_char[symmetry][exc][1]:.2f} \\\\ \n  ")
                 for tran in state_decomp[symmetry][exc]:
                     t_split = tran.split("$\\rightarrow$")
                     occ = t_split[0].replace(" ","")
@@ -547,7 +548,7 @@ class Molecule:
 #test2.get_exc_decomp("A")
 #test2.print_by_transition_dipole_moment("A1", 2, 2.2,"test.tex")
 #test2.calc_ct_character("A")
-#test2.make_ct_table("A", 0.01, "test.tex")
+#test2.make_ct_table("A", 0.001, "test.tex")
 #test2.make_lorentzian_plot("A", 6, "test")
 #
 #print(test2.Excited_State_Decomp["A1"]["1"])
