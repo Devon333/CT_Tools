@@ -129,7 +129,7 @@ class Molecule:
  \\begin{longtable}{c|c|c|c}
    \\caption{Excited States and Electron Configurations Table}
    \\hline
-     State & Energy/transition & Osc. Str./weight & charge transfer/Orb Char (s,p,d)\\\\
+     State & Energy/transition & Osc. Str./weight & charge transfer(\\tiny{mol->metal,metal->mol})/Orb Char (s,p,d)\\\\
     \\hline \n 
    \\endfirsthead 
    \\hline
