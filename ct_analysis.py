@@ -4,7 +4,7 @@
 # Alva Dillon, Hongyi Wu, Hanwen Liu Spring 2022
 #**************************************************************************
 
-
+import unittest
 import sys
 
 class Molecule:
@@ -63,7 +63,7 @@ class Molecule:
                     intensity2[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][0]) * float(self.Excited_States[symmetry][exc_num][1]) * 2
                     intensity3[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][1]) * float(self.Excited_States[symmetry][exc_num][1]) * 2
                     #intensity4[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][1]) * float(self.Excited_States[symmetry][exc_num][1]) * 2
-                if "A" in symmetry or "S" in sym[en] or "B" in sym[en]:
+                if "A" in symmetry or "S" in symmetry or "B" in symmetry:
                     intensity[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 1     
                     intensity2[i] += phi * (float(self.CT_Excited_State[symmetry][exc_num][0])) * float(self.Excited_States[symmetry][exc_num][1]) * 1
                     intensity3[i] += phi * (float(self.CT_Excited_State[symmetry][exc_num][1])) * float(self.Excited_States[symmetry][exc_num][1]) * 1
@@ -542,19 +542,28 @@ class Molecule:
 
 #test = Molecule("ag8exc.out","Ag")
 #test.get_MOs()
+#test.get_exc_states("S+.u")
 #test2 = Molecule("pyr_edge_exc.out")
 #test2.get_MOs()
 #test2.get_exc_states("A")
 #test2.get_exc_decomp("A")
 #test2.print_by_transition_dipole_moment("A1", 2, 2.2,"test.tex")
-#test2.calc_ct_character("A")
+#test.calc_ct_character("S+.u")
 #test2.make_ct_table("A", 0.001, "test.tex")
-#test2.make_lorentzian_plot("A", 6, "test")
+#test.make_lorentzian_plot("S+.u", 6, "mol_test")
 #
 #print(test2.Excited_State_Decomp["A1"]["1"])
 
-
-
+## TESTS
+class TestIsolatedMolecule(unittest.TestCase):
+    def runTest(self):
+    test = Molecule("Ag19_minus_exc.out","Ag")
+    test.get_MOs()
+    test.get_exc_states()
+    test.get_exc_decomp()
+    test.calc_ct_character()
+    test.make_lorentzian_plot(,6, "mol_test")
+    
 
 
 
