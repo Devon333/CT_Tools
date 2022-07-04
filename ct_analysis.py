@@ -4,7 +4,7 @@
 # Alva Dillon, Hongyi Wu, Hanwen Liu Spring 2022
 #**************************************************************************
 
-import unittest
+import traceback
 import sys
 
 class Molecule:
@@ -193,13 +193,16 @@ class Molecule:
                 transition = transition.split("$\\rightarrow$")
                 occ_orb = transition[0].replace(" ", "")
                 vir_orb = transition[1].replace(" ", "")
+                #print(f"occ_orb:{occ_orb}")
+                #print(f"vir_orb:{vir_orb}")
                 self.Orbital_Localized_Character_Norm[occ_orb] = []
                 self.Orbital_Localized_Character_Norm[vir_orb] = [] 
                 #occ_char = self.Orbital_Localized_Character[occ_orb]
-                occ_norm = [float(i)/sum(self.Orbital_Localized_Character[occ_orb]) for i in self.Orbital_Localized_Character[occ_orb]]
-                self.Orbital_Localized_Character_Norm[occ_orb]=occ_norm
-                #print(f"occupied_norm {occ_norm}")
-                count +=1 
+                if occ_orb in self.Orbital_Localized_Character:
+                    occ_norm = [float(i)/sum(self.Orbital_Localized_Character[occ_orb]) for i in self.Orbital_Localized_Character[occ_orb]]
+                    self.Orbital_Localized_Character_Norm[occ_orb]=occ_norm
+                    #print(f"occupied_norm {occ_norm}")
+                    count +=1 
                 if count == 1000:
                     exit()
                 #vir_char = self.Orbital_Localized_Character[vir_orb]
@@ -514,7 +517,22 @@ class Molecule:
                          orbital = str(sp_line[2])+str(sp_line[3])
                          orbital = orbital.split(":")
                          orbital = orbital[0].replace(" ","")
-                         #orbital= str(sp_line[2])+str(sp_line[3])
+                         if "E1.u" in orbital:
+                             orbital=orbital.replace("E1.u","pi.u")
+                             #print(f"changed orbital: {orbital}")
+                         if "E1.g" in orbital:
+                             orbital=orbital.replace("E1.g","pi.g")
+                             #print(f"changed orbital: {orbital}")
+                         if "E1" in orbital:
+                             orbital=orbital.replace("E1","e")
+                             #print(f"changed orbital: {orbital}")
+                         if "A1.g" in orbital:
+                             orbital=orbital.replace("A1.g","s+.g")
+                             #print(f"changed orbital: {orbital}")
+                         if "A2.u" in orbital:
+                             orbital=orbital.replace("A2.u","s+.u")
+                             #print(f"changed orbital: {orbital}")
+                         
                      if len(sp_line) == 7:                         
                          sp_line = line.split()
                          #print(sp_line)
@@ -555,15 +573,75 @@ class Molecule:
 #print(test2.Excited_State_Decomp["A1"]["1"])
 
 ## TESTS
-class TestIsolatedMolecule(unittest.TestCase):
-    def runTest(self):
-    test = Molecule("Ag19_minus_exc.out","Ag")
-    test.get_MOs()
-    test.get_exc_states()
-    test.get_exc_decomp()
-    test.calc_ct_character()
-    test.make_lorentzian_plot(,6, "mol_test")
+class TestClass:
+    def run_pyrEdge_test():
+        test = Molecule("pyr_edge_exc.out","Ag")
+        test.get_MOs()
+        print(test.Orbital_Energy)
+        test.get_exc_states("A")
+        print("finished get_exc_states")
+        test.get_exc_decomp("A")
+        print("finished get_exc_decomp")
+        test.calc_ct_character("A")
+        print("finished get_calc_ct_character")
+        test.make_lorentzian_plot("A",6, "pyr_edge_test")
+
+
+    def run_Ag8_test():
+        test = Molecule("ag8exc.out","Ag")
+        test.get_MOs()
+        print(test.Orbital_Energy)
+        test.get_exc_states("S+.u")
+        print("finished get_exc_states")
+        test.get_exc_decomp("S+.u")
+        print("finished get_exc_decomp")
+        test.calc_ct_character("S+.u")
+        print("finished get_calc_ct_character")
+        test.make_lorentzian_plot("S+.u",6, "Ag8_test")
+
+
+    def run_Ag19_test():
+        test = Molecule("Ag19_minus_exc.out","Ag")
+        test.get_MOs()
+        print(test.Orbital_Energy)
+        test.get_exc_states("A1")
+        print("finished get_exc_states")
+        test.get_exc_decomp("A1")
+        print("finished get_exc_decomp")
+        test.calc_ct_character("A1")
+        print("finished get_calc_ct_character")
+        test.make_lorentzian_plot("A1",6, "Ag19_minus_test")
     
+try:
+    TestClass.run_pyrEdge_test()
+    print("pyr_edge_exc.out test successful !!")
+except Exception as e:
+    print("Error in pyr_edge_exc.out test")
+    print(e)
+    traceback.print_exc()
+try:
+    TestClass.run_Ag8_test()
+    print("Ag8 test successful !!")
+except Exception as e:
+    print("Error in Ag8 test")
+    print(e)
+    traceback.print_exc()
+
+try:
+    TestClass.run_Ag19_test()
+    print("Ag19 test successful !!")
+except Exception as e:
+    print("Error in Ag19 test")
+    print(e)
+    traceback.print_exc()
+
+
+
+
+
+
+
+
 
 
 
