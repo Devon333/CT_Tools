@@ -612,28 +612,30 @@ class TestClass:
         print("finished get_calc_ct_character")
         test.make_lorentzian_plot("A1",6, "Ag19_minus_test")
     
-try:
-    TestClass.run_pyrEdge_test()
-    print("pyr_edge_exc.out test successful !!")
-except Exception as e:
-    print("Error in pyr_edge_exc.out test")
-    print(e)
-    traceback.print_exc()
-try:
-    TestClass.run_Ag8_test()
-    print("Ag8 test successful !!")
-except Exception as e:
-    print("Error in Ag8 test")
-    print(e)
-    traceback.print_exc()
 
-try:
-    TestClass.run_Ag19_test()
-    print("Ag19 test successful !!")
-except Exception as e:
-    print("Error in Ag19 test")
-    print(e)
-    traceback.print_exc()
+def run_test():
+    try:
+        TestClass.run_pyrEdge_test()
+        print("pyr_edge_exc.out test successful !!")
+    except Exception as e:
+        print("Error in pyr_edge_exc.out test")
+        print(e)
+        traceback.print_exc()
+    try:
+        TestClass.run_Ag8_test()
+        print("Ag8 test successful !!")
+    except Exception as e:
+        print("Error in Ag8 test")
+        print(e)
+        traceback.print_exc()
+    
+    try:
+        TestClass.run_Ag19_test()
+        print("Ag19 test successful !!")
+    except Exception as e:
+        print("Error in Ag19 test")
+        print(e)
+        traceback.print_exc()
 
 
 
