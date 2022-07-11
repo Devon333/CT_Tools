@@ -69,6 +69,10 @@ class Molecule:
                         intensity[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 2     
                         intensity2[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][0]) * float(self.Excited_States[symmetry][exc_num][1]) * 2
                         intensity3[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][1]) * float(self.Excited_States[symmetry][exc_num][1]) * 2
+                    if "T" in symmetry:
+                        intensity[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 3   
+                        intensity2[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][0]) * float(self.Excited_States[symmetry][exc_num][1]) * 3
+                        intensity3[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][1]) * float(self.Excited_States[symmetry][exc_num][1]) * 3
                         #intensity4[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][1]) * float(self.Excited_States[symmetry][exc_num][1]) * 2
                     if "A" in symmetry or "S" in symmetry or "B" in symmetry:
                         intensity[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 1     
