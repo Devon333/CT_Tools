@@ -50,7 +50,7 @@ class Molecule:
             file1.write(f"{energies[point]} \t {intensities[0][point]} \t {intensities[1][point]} \t {intensities[2][point]} \n")
         file1.close()
  
-    def make_lorentzian_plot(self, symmetry, max_energy, plot_name,sticks=False,createFile=False, noCT=False):
+    def make_lorentzian_plot(self, max_energy, plot_name,sticks=False,createFile=False, noCT=False):
         '''
         Function to make absorption spectra and the absorption spectra scaled by charge transfer for each excited state
         input required: symmetry of system, maximum energy of absorption spectra, name of .png file
@@ -99,7 +99,7 @@ class Molecule:
                             intensity2[i] += phi * float(self.CT_Excited_State[sym][exc_num][0]) * float(self.Excited_States[sym][exc_num][1]) * 3
                             intensity3[i] += phi * float(self.CT_Excited_State[sym][exc_num][1]) * float(self.Excited_States[sym][exc_num][1]) * 3
                             #intensity4[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][1]) * float(self.Excited_States[symmetry][exc_num][1]) * 2
-                        if "A" in symmetry or "S" in symmetry or "B" in symmetry:
+                        if "A" in sym or "S" in sym or "B" in sym:
                             intensity[i] += phi * float(self.Excited_States[sym][exc_num][1]) * 1     
                             intensity2[i] += phi * (float(self.CT_Excited_State[sym][exc_num][0])) * float(self.Excited_States[sym][exc_num][1]) * 1
                             intensity3[i] += phi * (float(self.CT_Excited_State[sym][exc_num][1])) * float(self.Excited_States[sym][exc_num][1]) * 1
@@ -717,7 +717,7 @@ class TestClass:
         print("finished get_exc_decomp")
         pytest.calc_ct_character("A")
         print("finished get_calc_ct_character")
-        pytest.make_lorentzian_plot("A",6, "pyr_edge_test",createFile=True)
+        pytest.make_lorentzian_plot(6, "pyr_edge_test",createFile=True)
         del pytest
 
 
@@ -736,7 +736,7 @@ class TestClass:
         agtest.calc_ct_character("S+.u")
         agtest.calc_ct_character("Pi+.u")
         print("finished get_calc_ct_character")
-        agtest.make_lorentzian_plot("S+.u",6, "Ag8_test", noCT=True, createFile=True)
+        agtest.make_lorentzian_plot(6, "Ag8_test", noCT=True, createFile=True)
         del agtest
 
     def run_Ag19_test():
@@ -752,12 +752,12 @@ class TestClass:
         ag19test.calc_ct_character("A1")
         ag19test.calc_ct_character("E")
         print("finished get_calc_ct_character")
-        ag19test.make_lorentzian_plot("A1",6, "Ag19_minus_test",noCT=True,sticks=True, createFile=True)
+        ag19test.make_lorentzian_plot(6, "Ag19_minus_test",noCT=True,sticks=True, createFile=True)
         del ag19test
 
     def run_spec_test():
         test = PlotFiles()
-        test.single_spec('pyr_edge_exc.out_A_intensities.txt',"test_single")
+        test.single_spec('pyr_edge_exc.out_sigma_intensities.txt',"test_single")
         print("single_spec run successfully! ")
         test.multi_spec(['pyr_edge_exc.out_sigma_intensities.txt','ag8exc.out_sigma_intensities.txt','Ag19_minus_exc.out_sigma_intensities.txt'],["pyr edge",'Ag 8', 'Ag 19'],"test_multi",noCT=True)
         print("multi_spec run successfully! ")
