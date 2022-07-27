@@ -115,8 +115,8 @@ class Molecule:
         ax.set_xlabel("Energy")
 
         if (noCT == False):
-            ax.plot(en_ax, intensity2,'-r',label="metal ct")
-            ax.plot(en_ax, intensity3,'-g', label="mol ct")
+            ax.plot(en_ax, intensity2,'-r',label="mol->metal ct")
+            ax.plot(en_ax, intensity3,'-g', label="metal->mol ct")
 
         ax.set_ylabel("Intensity")
         ax.set_ylim(bottom=0)
