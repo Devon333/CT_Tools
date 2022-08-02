@@ -118,7 +118,7 @@ class Molecule:
             ax.plot(en_ax, intensity2,'-r',label="mol->metal ct")
             ax.plot(en_ax, intensity3,'-g', label="metal->mol ct")
 
-        ax.set_ylabel("Intensity")
+        ax.set_ylabel("Absorption Intensity")
         ax.set_ylim(bottom=0)
         ax.legend(prop={'size': 10})
         plt.tight_layout()
