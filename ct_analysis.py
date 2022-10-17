@@ -4,7 +4,7 @@
 # Alva Dillon, Hongyi Wu, Hanwen Liu Spring 2022
 #**************************************************************************
 
-
+import traceback
 import sys
 
 class Molecule:
@@ -22,13 +22,35 @@ class Molecule:
     CT_Excited_State={} #{Symm: {Exc_num: [metal_CT_char, mol_CT_char]}}
 
     def __init__(self, ADF_Outname, metal="Ag"):
+        self.Orbital_Occ = {} # {orbital label: occupation}
+        self.Orbital_Energy = {} # {orbital label: MO Energy}
+        self.Orbital_Localized_Character_Norm = {} # {orbital label: [percent metal , percent molecule]}
+        self.Orbital_Localized_Character = {} # {orbital label: [percent metal , percent molecule]}
+        self.Orbital_Character = {} # {orbital label:[s character, p character, d character]}
+        self.Orbital_Character_Norm = {} # {orbital label:[s character, p character, d character]}
+        self.metal_type= None
+        self.Excited_States= {} # {Symm:{exc_num: [energy, osc_str, tdm_x, tdm_y, tdm_z]} } 
+        self.Excited_State_Decomp = {} # {Symm: {Exc_num:{transition label: [weight, tdm_x, tdm_y, tdm_z]} } }
+        self.CT_Osc_Product ={} #{Symm: {Exc_num: [metal_CT_char*osc_str, mol_CT_char*osc_str]}}
+        self.CT_Excited_State={} #{Symm: {Exc_num: [metal_CT_char, mol_CT_char]}}
+
         self.filename = str(ADF_Outname)
         self.metal_type = metal 
         self.get_MOs()
         self.orb_character_norm()
           
+    def print_abs_spec(self,symmetry,energies, intensities):
+        '''
+        requires symmetry, array of energies, and array of intensities
+        Function writes absorption intensities to file
+        '''
+        file1 = open(f'{self.filename}_{symmetry}_intensities.txt','w+')
+        file1.write(f'Energy \t total \t metal \t mol \n')
+        for point in range(len(intensities[0])):
+            file1.write(f"{energies[point]} \t {intensities[0][point]} \t {intensities[1][point]} \t {intensities[2][point]} \n")
+        file1.close()
  
-    def make_lorentzian_plot(self, symmetry, max_energy, plot_name):
+    def make_lorentzian_plot(self, max_energy, plot_name,sticks=False,createFile=False, noCT=False):
         '''
         Function to make absorption spectra and the absorption spectra scaled by charge transfer for each excited state
         input required: symmetry of system, maximum energy of absorption spectra, name of .png file
@@ -52,40 +74,59 @@ class Molecule:
             intensity3.append(0.0)
             intensity4.append(0.0)
 
-        #CT_Excited_State={} #{Symm: {Exc_num: CT_char}}
-        #Excited_States= {} # {Symm:{exc_num: [energy,
-        for exc_num in self.Excited_States[symmetry]:
-            for i in range(len(intensity)):
-                energy_point = en_ax[i]
-                phi = gamma /(((energy_point - float(self.Excited_States[symmetry][exc_num][0]))**2 + gamma**2)* math.pi) 
-                if "E" in symmetry:
-                    intensity[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 2     
-                    intensity2[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][0]) * float(self.Excited_States[symmetry][exc_num][1]) * 2
-                    intensity3[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][1]) * float(self.Excited_States[symmetry][exc_num][1]) * 2
-                    #intensity4[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][1]) * float(self.Excited_States[symmetry][exc_num][1]) * 2
-                if "A" in symmetry or "S" in sym[en] or "B" in sym[en]:
-                    intensity[i] += phi * float(self.Excited_States[symmetry][exc_num][1]) * 1     
-                    intensity2[i] += phi * (float(self.CT_Excited_State[symmetry][exc_num][0])) * float(self.Excited_States[symmetry][exc_num][1]) * 1
-                    intensity3[i] += phi * (float(self.CT_Excited_State[symmetry][exc_num][1])) * float(self.Excited_States[symmetry][exc_num][1]) * 1
-                    #intensity4[i] += phi * abs(float(self.CT_Excited_State[symmetry][exc_num][1])) * float(self.Excited_States[symmetry][exc_num][1]) * 1
-        #print(f"intensity {intensity}")
-        fig = plt.figure(figsize=(12,10))
-        plt.rcParams.update({'font.size': 38, 'font.weight':'bold'})
+        fig = plt.figure(figsize=(6.54,6.54),dpi=900)
+        plt.rcParams.update({'font.size': 20, 'font.weight':'medium'})
         ax = fig.add_subplot(111)
-        #ax2 = ax.twinx()
+        stick=[]
+        stick_h=[]
+        #CT_Excited_State={} #{Symm: {Exc_num: [metal_CT_char, mol_CT_char]}}
+        #Excited_States= {} # {Symm:{exc_num: [energy, osc_str, tdm_x, tdm_y, tdm_z]} } 
+        print(self.Excited_States)
+        for sym in self.Excited_States:
+            for exc_num in self.Excited_States[sym]:
+                if float(self.Excited_States[sym][exc_num][0]) < max_energy:
+                    stick.append(float(self.Excited_States[sym][exc_num][0]))
+                    stick_h.append(float(self.Excited_States[sym][exc_num][1]))
+                    for i in range(len(intensity)):
+                        energy_point = en_ax[i]
+                        phi = gamma /(((energy_point - float(self.Excited_States[sym][exc_num][0]))**2 + gamma**2)* math.pi) 
+                        if "E" in sym:
+                            intensity[i] += phi * float(self.Excited_States[sym][exc_num][1]) * 2     
+                            intensity2[i] += phi * float(self.CT_Excited_State[sym][exc_num][0]) * float(self.Excited_States[sym][exc_num][1]) * 2
+                            intensity3[i] += phi * float(self.CT_Excited_State[sym][exc_num][1]) * float(self.Excited_States[sym][exc_num][1]) * 2
+                        if "T" in sym:
+                            intensity[i] += phi * float(self.Excited_States[sym][exc_num][1]) * 3   
+                            intensity2[i] += phi * float(self.CT_Excited_State[sym][exc_num][0]) * float(self.Excited_States[sym][exc_num][1]) * 3
+                            intensity3[i] += phi * float(self.CT_Excited_State[sym][exc_num][1]) * float(self.Excited_States[sym][exc_num][1]) * 3
+                            #intensity4[i] += phi * float(self.CT_Excited_State[symmetry][exc_num][1]) * float(self.Excited_States[symmetry][exc_num][1]) * 2
+                        if "A" in sym or "S" in sym or "B" in sym:
+                            intensity[i] += phi * float(self.Excited_States[sym][exc_num][1]) * 1     
+                            intensity2[i] += phi * (float(self.CT_Excited_State[sym][exc_num][0])) * float(self.Excited_States[sym][exc_num][1]) * 1
+                            intensity3[i] += phi * (float(self.CT_Excited_State[sym][exc_num][1])) * float(self.Excited_States[sym][exc_num][1]) * 1
+                            #intensity4[i] += phi * abs(float(self.CT_Excited_State[symmetry][exc_num][1])) * float(self.Excited_States[symmetry][exc_num][1]) * 1
+            #print(f"intensity {intensity}")
+        if (sticks == True):
+            ax2 = ax.twinx()
+            ax2.vlines(x = stick, ymin = 0, ymax = stick_h,linewidth=0.5,color="black")  
+            ax2.set_ylim(ymin=0,ymax=max(stick_h)*2)
+            ax2.set_ylabel("Osc Str.")
 
         ax.plot(en_ax, intensity,'-b',label="total abs")
         ax.set_xlabel("Energy")
-       # ax.set_ylabel("total")
-        ax.plot(en_ax, intensity2,'-r',label="metal ct")
-       # ax.set_ylabel("metal")
-        ax.plot(en_ax, intensity3,'-g', label="mol ct")
-        #ax.plot(en_ax, intensity4,'-m', label="abs ct")
-        ax.set_ylabel("Intensity")
-        plt.legend(prop={'size': 15})
+
+        if (noCT == False):
+            ax.plot(en_ax, intensity2,'-r',label="mol->metal ct")
+            ax.plot(en_ax, intensity3,'-g', label="metal->mol ct")
+
+        ax.set_ylabel("Absorption Intensity")
+        ax.set_ylim(bottom=0)
+        ax.legend(prop={'size': 10})
+        plt.tight_layout()
         #plt.show()
         plt.savefig(f"{plot_name}.png")
 
+        if (createFile == True):
+            self.print_abs_spec('sigma',en_ax, [intensity,intensity2,intensity3])
 
 
 
@@ -129,7 +170,7 @@ class Molecule:
  \\begin{longtable}{c|c|c|c}
    \\caption{Excited States and Electron Configurations Table}
    \\hline
-     State & Energy/transition & Osc. Str./weight & charge transfer(\\tiny{mol->metal,metal->mol})/Orb Char (s,p,d)\\\\
+     State & Energy/transition & Osc. Str./weight & charge transfer\\tiny({mol->metal,metal->mol})\\normalsize/Orb Char (s,p,d)\\\\
     \\hline \n 
    \\endfirsthead 
    \\hline
@@ -193,14 +234,18 @@ class Molecule:
                 transition = transition.split("$\\rightarrow$")
                 occ_orb = transition[0].replace(" ", "")
                 vir_orb = transition[1].replace(" ", "")
+                #print(f"occ_orb:{occ_orb}")
+                #print(f"vir_orb:{vir_orb}")
                 self.Orbital_Localized_Character_Norm[occ_orb] = []
                 self.Orbital_Localized_Character_Norm[vir_orb] = [] 
                 #occ_char = self.Orbital_Localized_Character[occ_orb]
-                occ_norm = [float(i)/sum(self.Orbital_Localized_Character[occ_orb]) for i in self.Orbital_Localized_Character[occ_orb]]
-                self.Orbital_Localized_Character_Norm[occ_orb]=occ_norm
-                #print(f"occupied_norm {occ_norm}")
-                count +=1 
+                if occ_orb in self.Orbital_Localized_Character:
+                    occ_norm = [float(i)/sum(self.Orbital_Localized_Character[occ_orb]) for i in self.Orbital_Localized_Character[occ_orb]]
+                    self.Orbital_Localized_Character_Norm[occ_orb]=occ_norm
+                    #print(f"occupied_norm {occ_norm}")
+                    count +=1 
                 if count == 1000:
+                    print("i quit in calc_ct")
                     exit()
                 #vir_char = self.Orbital_Localized_Character[vir_orb]
                 try:
@@ -510,11 +555,33 @@ class Molecule:
                          s_char += char_type[0]
                          p_char += char_type[1]
                          d_char += char_type[2]
+                         if "AA" == str(sp_line[3]):
+                             sp_line[3]="a'"
+                             #print(f"changed orbital: {sp_line[3]}")
+                         if "AAA" == str(sp_line[3]):
+                             sp_line[3]="a''"
+                             #print(f"changed orbital: {sp_line[3]}")
                          #print(f"{s_char}, {p_char}, {d_char}") 
                          orbital = str(sp_line[2])+str(sp_line[3])
                          orbital = orbital.split(":")
                          orbital = orbital[0].replace(" ","")
-                         #orbital= str(sp_line[2])+str(sp_line[3])
+                         if "E1.u" in orbital:
+                             orbital=orbital.replace("E1.u","pi.u")
+                             #print(f"changed orbital: {orbital}")
+                         if "E1.g" in orbital:
+                             orbital=orbital.replace("E1.g","pi.g")
+                             #print(f"changed orbital: {orbital}")
+                         if "E1" in orbital:
+                             orbital=orbital.replace("E1","e")
+                             #print(f"changed orbital: {orbital}")
+                         if "A1.g" in orbital:
+                             orbital=orbital.replace("A1.g","s+.g")
+                             #print(f"changed orbital: {orbital}")
+                         if "A2.u" in orbital:
+                             orbital=orbital.replace("A2.u","s+.u")
+                             #print(f"changed orbital: {orbital}")
+
+                         
                      if len(sp_line) == 7:                         
                          sp_line = line.split()
                          #print(sp_line)
@@ -542,16 +609,203 @@ class Molecule:
 
 #test = Molecule("ag8exc.out","Ag")
 #test.get_MOs()
+#test.get_exc_states("S+.u")
 #test2 = Molecule("pyr_edge_exc.out")
 #test2.get_MOs()
 #test2.get_exc_states("A")
 #test2.get_exc_decomp("A")
 #test2.print_by_transition_dipole_moment("A1", 2, 2.2,"test.tex")
-#test2.calc_ct_character("A")
+#test.calc_ct_character("S+.u")
 #test2.make_ct_table("A", 0.001, "test.tex")
-#test2.make_lorentzian_plot("A", 6, "test")
+#test.make_lorentzian_plot("S+.u", 6, "mol_test")
 #
 #print(test2.Excited_State_Decomp["A1"]["1"])
+
+
+
+
+
+class PlotFiles:
+    def multi_spec(self,filenames,labels,plot_name,noCT=False):
+        import matplotlib.pyplot as plt
+        fig = plt.figure(figsize=(6.54,6.54),dpi=600)
+        plt.rcParams.update({'font.size': 20, 'font.weight':'medium'})
+        ax = fig.add_subplot(111)
+        for i in range(len(filenames)):
+            fi = open(filenames[i],'r')
+            intensity=[]
+            intensity2=[]
+            intensity3 = []
+            en_ax = []
+            line = fi.readline()
+            line = fi.readline()
+            while line:
+                sp_line = line.split()
+                en_ax.append(float(sp_line[0]))
+                intensity.append(float(sp_line[1]))
+                intensity2.append(float(sp_line[2]))
+                intensity3.append(float(sp_line[3]))
+                line = fi.readline()
+            fi.close()
+
+            ax.plot(en_ax, intensity,'-',label=f"{labels[i]}")
+            if(noCT == False):
+                ax.plot(en_ax, intensity2,'-',label=f"{labels[i]}"+"$_{metal ct}$")
+                ax.plot(en_ax, intensity3,'-', label=f"{labels[i]}"+"$_{mol ct}$")
+
+        ax.set_xlabel("Energy")
+        ax.set_ylabel("Intensity")
+        ax.set_ylim(bottom=0)
+        ax.legend(prop={'size': 10})
+        plt.tight_layout()
+        #plt.show()
+        plt.savefig(f"{plot_name}.png")
+
+
+
+    def single_spec(self,filename,plot_name):
+        '''
+        Function takes input from file to make single absorption spectra
+        '''
+
+        import matplotlib.pyplot as plt
+        fi = open(filename,'r')
+        intensity=[]
+        intensity2=[]
+        intensity3 = []
+        en_ax = []
+        line = fi.readline()
+        line = fi.readline()
+        while line:
+            sp_line = line.split()
+            en_ax.append(float(sp_line[0]))
+            intensity.append(float(sp_line[1]))
+            intensity2.append(float(sp_line[2]))
+            intensity3.append(float(sp_line[3]))
+            line = fi.readline()
+        fi.close()
+
+        fig = plt.figure(figsize=(6.54,6.54),dpi=600)
+        plt.rcParams.update({'font.size': 20, 'font.weight':'medium'})
+        ax = fig.add_subplot(111)
+        ax.plot(en_ax, intensity,'-b',label="total abs")
+        ax.set_xlabel("Energy")
+       # ax.set_ylabel("total")
+        ax.plot(en_ax, intensity2,'-r',label="metal ct")
+       # ax.set_ylabel("metal")
+        ax.plot(en_ax, intensity3,'-g', label="mol ct")
+        #ax.plot(en_ax, intensity4,'-m', label="abs ct")
+        ax.set_ylabel("Intensity")
+        ax.set_ylim(bottom=0)
+        ax.legend(prop={'size': 10})
+        plt.tight_layout()
+        #plt.show()
+        plt.savefig(f"{plot_name}.png")
+            
+
+
+
+
+
+
+
+
+
+
+
+## TESTS
+class TestClass:
+    def run_pyrEdge_test():
+        pytest = Molecule("pyr_edge_exc.out","Ag")
+        #pytest.get_MOs()
+        print(pytest.Orbital_Energy)
+        pytest.get_exc_states("A")
+        print("finished get_exc_states")
+        pytest.get_exc_decomp("A")
+        print("finished get_exc_decomp")
+        pytest.calc_ct_character("A")
+        print("finished get_calc_ct_character")
+        pytest.make_lorentzian_plot(6, "pyr_edge_test",createFile=True)
+        del pytest
+
+
+
+
+    def run_Ag8_test():
+        agtest = Molecule("ag8exc.out","Ag")
+        #agtest.get_MOs()
+        print(agtest.Orbital_Energy)
+        agtest.get_exc_states("S+.u")
+        agtest.get_exc_states("Pi+.u")
+        print("finished get_exc_states")
+        agtest.get_exc_decomp("S+.u")
+        agtest.get_exc_decomp("Pi+.u")
+        print("finished get_exc_decomp")
+        agtest.calc_ct_character("S+.u")
+        agtest.calc_ct_character("Pi+.u")
+        print("finished get_calc_ct_character")
+        agtest.make_lorentzian_plot(6, "Ag8_test", noCT=True, createFile=True)
+        del agtest
+
+    def run_Ag19_test():
+        ag19test = Molecule("Ag19_minus_exc.out","Ag")
+        #ag19test.get_MOs()
+        print(ag19test.Orbital_Energy)
+        ag19test.get_exc_states("A1")
+        ag19test.get_exc_states("E")
+        print("finished get_exc_states")
+        ag19test.get_exc_decomp("A1")
+        ag19test.get_exc_decomp("E")
+        print("finished get_exc_decomp")
+        ag19test.calc_ct_character("A1")
+        ag19test.calc_ct_character("E")
+        print("finished get_calc_ct_character")
+        ag19test.make_lorentzian_plot(6, "Ag19_minus_test",noCT=True,sticks=True, createFile=True)
+        del ag19test
+
+    def run_spec_test():
+        test = PlotFiles()
+        test.single_spec('pyr_edge_exc.out_sigma_intensities.txt',"test_single")
+        print("single_spec run successfully! ")
+        test.multi_spec(['pyr_edge_exc.out_sigma_intensities.txt','ag8exc.out_sigma_intensities.txt','Ag19_minus_exc.out_sigma_intensities.txt'],["pyr edge",'Ag 8', 'Ag 19'],"test_multi",noCT=True)
+        print("multi_spec run successfully! ")
+        
+ 
+
+def run_test():
+    try:
+        TestClass.run_pyrEdge_test()
+        print("pyr_edge_exc.out test successful !!")
+    except Exception as e:
+        print("Error in pyr_edge_exc.out test")
+        print(e)
+        traceback.print_exc()
+    try:
+        TestClass.run_Ag8_test()
+        print("Ag8 test successful !!")
+    except Exception as e:
+        print("Error in Ag8 test")
+        print(e)
+        traceback.print_exc()
+    
+    try:
+        TestClass.run_Ag19_test()
+        print("Ag19 test successful !!")
+    except Exception as e:
+        print("Error in Ag19 test")
+        print(e)
+        traceback.print_exc()
+
+    try:
+        TestClass.run_spec_test()
+        print("Spec test done")
+    except Exception as e:
+        print("Error in run_spec_test")
+        print(e)
+        traceback.print_exc()
+
+
+
 
 
 
