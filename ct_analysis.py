@@ -195,10 +195,10 @@ class Molecule:
         ax.set_xlabel("Energy")
 
         if (noCT == False):
-            ax.plot(en_ax, intensity2,'-r',label="metal ct")
-            ax.plot(en_ax, intensity3,'-g', label="mol ct")
+            ax.plot(en_ax, intensity2,'-r',label="mol->metal ct")
+            ax.plot(en_ax, intensity3,'-g', label="metal->mol ct")
 
-        ax.set_ylabel("Intensity")
+        ax.set_ylabel("Absorption Intensity")
         ax.set_ylim(bottom=0)
         ax.legend(prop={'size': 10})
         plt.tight_layout()
@@ -325,6 +325,7 @@ class Molecule:
                     #print(f"occupied_norm {occ_norm}")
                     count +=1 
                 if count == 1000:
+                    print("i quit in calc_ct")
                     exit()
                 #vir_char = self.Orbital_Localized_Character[vir_orb]
                 try:
@@ -634,6 +635,12 @@ class Molecule:
                          s_char += char_type[0]
                          p_char += char_type[1]
                          d_char += char_type[2]
+                         if "AA" == str(sp_line[3]):
+                             sp_line[3]="a'"
+                             #print(f"changed orbital: {sp_line[3]}")
+                         if "AAA" == str(sp_line[3]):
+                             sp_line[3]="a''"
+                             #print(f"changed orbital: {sp_line[3]}")
                          #print(f"{s_char}, {p_char}, {d_char}") 
                          orbital = str(sp_line[2])+str(sp_line[3])
                          orbital = orbital.split(":")
@@ -653,6 +660,7 @@ class Molecule:
                          if "A2.u" in orbital:
                              orbital=orbital.replace("A2.u","s+.u")
                              #print(f"changed orbital: {orbital}")
+
                          
                      if len(sp_line) == 7:                         
                          sp_line = line.split()
