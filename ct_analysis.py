@@ -50,6 +50,86 @@ class Molecule:
             file1.write(f"{energies[point]} \t {intensities[0][point]} \t {intensities[1][point]} \t {intensities[2][point]} \n")
         file1.close()
  
+    def pseudo_jablonski(self,plot_name):
+        '''
+        Function takes single input file and makes a jablonski like diagram 
+        with linetypes that indicate the charge transfer character of an excited state
+        '''
+        import matplotlib.pyplot as plt
+        Exc_state_prop = self.Excited_States
+        CT_Char = self.CT_Excited_State
+        energies1=[]
+        char1 = []
+        energies2=[]
+        char2 = []
+        energies3=[]
+        char3 = []
+        for sym in self.Excited_States:
+            for num in self.Excited_States[sym]:
+                print(f"state energies and ct character {self.Excited_States[sym][num]}  {self.CT_Excited_State[sym][num][0]}")
+                if(self.CT_Excited_State[sym][num][0] < 0.25):
+                    energies1.append(self.Excited_States[sym][num][0])
+                    char1.append(self.CT_Excited_State[sym][num][0])
+                elif(self.CT_Excited_State[sym][num][0] <= 0.5 and self.CT_Excited_State[sym][num][0] >= 0.25):
+                    energies2.append(self.Excited_States[sym][num][0])
+                    char2.append(self.CT_Excited_State[sym][num][0])
+                elif(self.CT_Excited_State[sym][num][0] > 0.5):
+                    energies3.append(self.Excited_States[sym][num][0])
+                    char3.append(self.CT_Excited_State[sym][num][0])
+
+        plt.hlines(energies1,xmin=0.25, xmax = 0.75, color='grey')
+        plt.hlines(energies2,xmin=0.25, xmax = 0.75, color='blue')
+        plt.hlines(energies3,xmin=0.25, xmax = 0.75, color='red')
+        plt.xlim(0,1)
+        plt.show()
+
+    def multi_pseudo_jablonski(self, multiExcitedStates, multiCTStates,plt_title,labels):
+        '''
+        Function takes multiple dictionaries and makes a jablonski like diagram 
+        with linetypes that indicate the charge transfer character of an excited state
+        '''
+        import matplotlib.pyplot as plt
+        xs=0.25
+        xe=0.75
+        fig, ax = plt.subplots(1,1,figsize=(6,14))
+        xe_list=[]
+        max_e=0
+        for group in range(len(multiExcitedStates)):
+            energies1=[]
+            char1 = []
+            energies2=[]
+            char2 = []
+            energies3=[]
+            char3 = []
+            for sym in multiExcitedStates[group]:
+                for num in multiExcitedStates[group][sym]:
+                    #print(f"state energies and ct character {self.Excited_States[sym][num]}  {self.CT_Excited_State[sym][num][0]}")
+                    if(multiExcitedStates[group][sym][num][0] > max_e):
+                        max_e = multiExcitedStates[group][sym][num][0]
+                    if(multiCTStates[group][sym][num][0] < 0.25):
+                        energies1.append(multiExcitedStates[group][sym][num][0])
+                        char1.append(multiCTStates[group][sym][num][0])
+                    elif(multiCTStates[group][sym][num][0] <= 0.5 and multiCTStates[group][sym][num][0] >= 0.25):
+                        energies2.append(multiExcitedStates[group][sym][num][0])
+                        char2.append(multiCTStates[group][sym][num][0])
+                    elif(multiCTStates[group][sym][num][0] > 0.5):
+                        energies3.append(multiExcitedStates[group][sym][num][0])
+                        char3.append(multiCTStates[group][sym][num][0])
+             
+            ax.hlines(energies1,xmin=xs, xmax=xe, color='grey',label='Ag12')
+            ax.hlines(energies2,xmin=xs, xmax=xe, color='blue')
+            ax.hlines(energies3,xmin=xs, xmax=xe, color='red')
+            xe_list.append(xe-.25)
+            xe+=0.75
+            xs+=0.75
+        ax.set_xticks(xe_list)
+        ax.set_xticklabels(labels, fontsize=18)
+        plt.title(f"${plt_title}$",fontsize=18)
+        plt.ylim(0,max_e)
+        plt.xlim(0,xe)
+        plt.show() 
+
+
     def make_lorentzian_plot(self, max_energy, plot_name,sticks=False,createFile=False, noCT=False):
         '''
         Function to make absorption spectra and the absorption spectra scaled by charge transfer for each excited state
@@ -652,6 +732,8 @@ class PlotFiles:
         plt.tight_layout()
         #plt.show()
         plt.savefig(f"{plot_name}.png")
+
+
 
 
 
