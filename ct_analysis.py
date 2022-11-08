@@ -83,7 +83,7 @@ class Molecule:
         plt.xlim(0,1)
         plt.show()
 
-    def multi_pseudo_jablonski(self, multiExcitedStates, multiCTStates,plt_title,labels):
+    def multi_pseudo_jablonski(self, multiExcitedStates, multiCTStates,plt_title,labels,cutoffs):
         '''
         Function takes multiple dictionaries and makes a jablonski like diagram 
         with linetypes that indicate the charge transfer character of an excited state
@@ -93,40 +93,64 @@ class Molecule:
         xe=0.75
         fig, ax = plt.subplots(1,1,figsize=(6,14))
         xe_list=[]
+        t1=[]
+        t2=[]
+        t3=[]
+        t4=[]
+        t5=[]
         max_e=0
         for group in range(len(multiExcitedStates)):
-            energies1=[]
-            char1 = []
-            energies2=[]
-            char2 = []
-            energies3=[]
-            char3 = []
+            
+            exceptions=[]
+            char1_mol_metal = []
+            char1_metal_mol = []
+            char2_mol_metal = []
+            char2_metal_mol = []
+            char3_mol_metal = []
+            char3_metal_mol = []
             for sym in multiExcitedStates[group]:
                 for num in multiExcitedStates[group][sym]:
                     #print(f"state energies and ct character {self.Excited_States[sym][num]}  {self.CT_Excited_State[sym][num][0]}")
                     if(multiExcitedStates[group][sym][num][0] > max_e):
                         max_e = multiExcitedStates[group][sym][num][0]
-                    if(multiCTStates[group][sym][num][0] < 0.25):
-                        energies1.append(multiExcitedStates[group][sym][num][0])
-                        char1.append(multiCTStates[group][sym][num][0])
-                    elif(multiCTStates[group][sym][num][0] <= 0.5 and multiCTStates[group][sym][num][0] >= 0.25):
-                        energies2.append(multiExcitedStates[group][sym][num][0])
-                        char2.append(multiCTStates[group][sym][num][0])
-                    elif(multiCTStates[group][sym][num][0] > 0.5):
-                        energies3.append(multiExcitedStates[group][sym][num][0])
-                        char3.append(multiCTStates[group][sym][num][0])
+                    if(multiCTStates[group][sym][num][0] > cutoffs[0] and multiCTStates[group][sym][num][0] <= cutoffs[1]):
+                        char1_mol_metal.append(multiExcitedStates[group][sym][num][0])
+                    elif(multiCTStates[group][sym][num][0] > cutoffs[1] and multiCTStates[group][sym][num][0] <= cutoffs[2]):
+                        char2_mol_metal.append(multiExcitedStates[group][sym][num][0])
+                    elif(multiCTStates[group][sym][num][0] > cutoffs[2]):
+                        char3_mol_metal.append(multiExcitedStates[group][sym][num][0])
+                    elif(multiCTStates[group][sym][num][1] > cutoffs[0] and multiCTStates[group][sym][num][1] <= cutoffs[1]):
+                        char1_metal_mol.append(multiExcitedStates[group][sym][num][0])
+                    elif(multiCTStates[group][sym][num][1] > cutoffs[1] and multiCTStates[group][sym][num][1] <= cutoffs[2]):
+                        char2_metal_mol.append(multiExcitedStates[group][sym][num][0])
+                    elif(multiCTStates[group][sym][num][1] > cutoffs[2]):
+                        char3_metal_mol.append(multiExcitedStates[group][sym][num][0])
+                    else:
+                        exceptions.append(multiExcitedStates[group][sym][num][0])  
+            
              
-            ax.hlines(energies1,xmin=xs, xmax=xe, color='grey',label='Ag12')
-            ax.hlines(energies2,xmin=xs, xmax=xe, color='blue')
-            ax.hlines(energies3,xmin=xs, xmax=xe, color='red')
+            ax.hlines(t1, linestyle="solid", xmin=xs, xmax=xe,color='black' ,alpha=.7)
+            ax.hlines(t2, linestyle="dashed", xmin=xs, xmax=xe,color='black' ,alpha=.7)
+            ax.hlines(t3, linestyle="dashed", xmin=xs, xmax=xe,color='black' ,alpha=.7)
+            ax.hlines(t4, linestyle="solid", xmin=xs, xmax=xe,color='blue' ,alpha=.7)
+            ax.hlines(t5, linestyle="solid", xmin=xs, xmax=xe,color='red' ,alpha=.7)
+            ax.hlines(char1_metal_mol, linestyle="solid", xmin=xs, xmax=xe,color='blue' ,alpha=.7)
+            ax.hlines(char2_metal_mol, linestyle="dashed", xmin=xs, xmax=xe,color='blue',alpha=.7)
+            ax.hlines(char3_metal_mol, linestyle="dotted", xmin=xs, xmax=xe,color='blue',alpha=.7)
+            ax.hlines(char1_mol_metal, linestyle="solid", xmin=xs, xmax=xe,color= 'red' ,alpha=.7)
+            ax.hlines(char2_mol_metal, linestyle="dashed", xmin=xs, xmax=xe,color='red',alpha=.7)
+            ax.hlines(char3_mol_metal, linestyle="dotted", xmin=xs, xmax=xe,color='red',alpha=.7)
+            ax.hlines(exceptions, linestyle="solid", xmin=xs, xmax=xe,color='grey',alpha=.3)
             xe_list.append(xe-.25)
             xe+=0.75
             xs+=0.75
         ax.set_xticks(xe_list)
         ax.set_xticklabels(labels, fontsize=18)
+        ax.set_ylabel("Energy(eV)")
         plt.title(f"${plt_title}$",fontsize=18)
         plt.ylim(0,max_e)
         plt.xlim(0,xe)
+        ax.legend([f'{cutoffs[0]} $\geq$ ct $\leq$ {cutoffs[1]}',f'{cutoffs[1]} < ct $\leq$ {cutoffs[2]}',f'ct > {cutoffs[2]}',"metal to molecule", "molecule to metal"],prop={'size': 6})
         plt.show() 
 
 
@@ -344,7 +368,7 @@ class Molecule:
                 #print(f"{metal_ct} { mol_ct}  inloop")
             try:
                 #print(f"{metal_ct} {mol_ct} outloop")
-                occ_vir_diff=[metal_ct, mol_ct] #occ_vir_diff = [part metal , part molecule]
+                occ_vir_diff=[metal_ct, mol_ct] #occ_vir_diff = [molecule2metal , metal2molecule]
                 #print(f"ct {state} : {occ_vir_diff}") 
                 #print(f"ct*osc_str : {occ_vir_diff[0]*float(self.Excited_States[symm][state][1])} ")                 
                 self.CT_Excited_State[symm][state]=occ_vir_diff
